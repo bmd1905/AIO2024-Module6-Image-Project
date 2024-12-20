@@ -1,11 +1,10 @@
 import os
 import tempfile
 from io import BytesIO
-from typing import Union
 
 import numpy as np
 import requests
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from PIL import Image
 from ray import serve
