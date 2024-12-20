@@ -1,3 +1,5 @@
+import os
+import tempfile
 from io import BytesIO
 
 import numpy as np
@@ -24,16 +26,21 @@ class APIIngress:
     @app.get("/detect", response_class=Response)
     async def detect(self, image_url: str):
         try:
-            # Request detection results
-            bboxes, classes, names, confs = await self.handle.detect.remote(image_url)
+            # Create a temporary file in the system's temp directory
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
+                # Download the image directly to the temp file
+                response = requests.get(image_url)
+                response.raise_for_status()
+                temp_file.write(response.content)
+                temp_file_path = temp_file.name
 
-            # Load image
-            response = requests.get(image_url)
-            response.raise_for_status()
+            # Request detection results using the temp file path
+            bboxes, classes, names, confs = await self.handle.detect.remote(
+                temp_file_path
+            )
 
-            # Convert PIL Image to numpy array for Annotator
-            image_bytes = BytesIO(response.content)
-            image = Image.open(image_bytes)
+            # Open the image from the temp file
+            image = Image.open(temp_file_path)
             image_array = np.array(image)
 
             # Initialize Annotator
@@ -51,6 +58,9 @@ class APIIngress:
             annotated_image.save(file_stream, format="PNG")
             file_stream.seek(0)
 
+            # Clean up the temporary file
+            os.unlink(temp_file_path)
+
             return Response(content=file_stream.getvalue(), media_type="image/png")
 
         except requests.RequestException as e:
@@ -67,10 +77,10 @@ class ObjectDetection:
     def __init__(self):
         self.model = YOLO(MODEL_PATH)
 
-    def detect(self, image_url: str):
+    def detect(self, image_path: str):
         try:
             # Perform object detection
-            results = self.model(image_url, verbose=False)[0]
+            results = self.model(image_path, verbose=False)[0]
             return (
                 results.boxes.xyxy.tolist(),
                 results.boxes.cls.tolist(),
