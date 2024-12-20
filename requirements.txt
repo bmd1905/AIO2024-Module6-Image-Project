@@ -6,3 +6,8 @@ requests==2.32.3
 torch==2.5.1
 ultralytics==8.3.51
 python-multipart==0.0.20
+gdown
+scikit-learn
+pygments
+pexpect
+timm
