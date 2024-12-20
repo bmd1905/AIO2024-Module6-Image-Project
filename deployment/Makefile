@@ -1,0 +1,13 @@
+.PHONY: init deploy client clean
+
+clean:
+	ray stop || true
+	rm -rf /tmp/ray_project/*
+
+init: clean
+	mkdir -p /tmp/ray_project
+	ray start --head --disable-usage-stats --temp-dir=/tmp/ray_project
+
+deploy:
+	@echo "Starting object detection server..."
+	serve run object_detection:entrypoint --address="auto"
