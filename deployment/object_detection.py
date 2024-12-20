@@ -12,9 +12,7 @@ from ultralytics.utils.plotting import Annotator, colors
 app = FastAPI()
 
 # Constants
-MODEL_PATH = (
-    "/home/aivn12s2/Desktop/Duc/AIO/Module-6/Image-Project/deployment/yolo11n.pt"
-)
+MODEL_PATH = "../models/yolov11/detect/train/weights/best.pt"
 
 
 @serve.deployment(num_replicas=1)
