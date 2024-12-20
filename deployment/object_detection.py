@@ -1,10 +1,11 @@
 import os
 import tempfile
 from io import BytesIO
+from typing import Union
 
 import numpy as np
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import Response
 from PIL import Image
 from ray import serve
@@ -23,15 +24,12 @@ class APIIngress:
     def __init__(self, object_detection_handle):
         self.handle = object_detection_handle
 
-    @app.get("/detect", response_class=Response)
-    async def detect(self, image_url: str):
+    async def process_image(self, image_data: bytes) -> Response:
+        """Common image processing logic for both URL and file upload"""
         try:
-            # Create a temporary file in the system's temp directory
+            # Create a temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
-                # Download the image directly to the temp file
-                response = requests.get(image_url)
-                response.raise_for_status()
-                temp_file.write(response.content)
+                temp_file.write(image_data)
                 temp_file_path = temp_file.name
 
             # Request detection results using the temp file path
@@ -63,10 +61,35 @@ class APIIngress:
 
             return Response(content=file_stream.getvalue(), media_type="image/png")
 
-        except requests.RequestException as e:
-            raise HTTPException(status_code=400, detail=f"Error downloading image: {e}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error processing image: {e}")
+
+    @app.get("/detect", response_class=Response)
+    async def detect_url(self, image_url: str):
+        """Endpoint for processing images from URLs"""
+        try:
+            response = requests.get(image_url)
+            response.raise_for_status()
+            return await self.process_image(response.content)
+        except requests.RequestException as e:
+            raise HTTPException(status_code=400, detail=f"Error downloading image: {e}")
+
+    @app.post("/detect/upload", response_class=Response)
+    async def detect_upload(self, file: UploadFile = File(...)):
+        """Endpoint for processing uploaded image files"""
+        try:
+            # Validate file type
+            if not file.content_type.startswith("image/"):
+                raise HTTPException(status_code=400, detail="File must be an image")
+
+            # Read file content
+            content = await file.read()
+            return await self.process_image(content)
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Error processing uploaded file: {e}"
+            )
 
 
 @serve.deployment(
