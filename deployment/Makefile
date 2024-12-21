@@ -11,3 +11,7 @@ init: clean
 deploy:
 	@echo "Starting object detection server..."
 	serve run object_detection:entrypoint --address="auto"
+
+deploy_ocr:
+	@echo "Starting OCR server..."
+	serve run ocr:entrypoint --address="auto"
