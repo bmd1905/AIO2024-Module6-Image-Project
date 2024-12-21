@@ -2,17 +2,17 @@ import os
 import tempfile
 from io import BytesIO
 
+import numpy as np
 import requests
 import torch
 from crnn import CRNN
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import Response
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from ray import serve
 from torchvision import transforms
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
-import numpy as np
 
 app = FastAPI()
 
@@ -167,35 +167,48 @@ class OCRService:
         # Initialize Annotator
         annotator = Annotator(image_array, font="Arial.ttf", pil=False)
 
+        # Sort predictions by y-coordinate to handle overlapping better
+        predictions = sorted(
+            predictions, key=lambda x: x[0][1]
+        )  # Sort by y1 coordinate
+
         for bbox, class_name, confidence, text in predictions:
             # Convert bbox coordinates to integers
             x1, y1, x2, y2 = [int(coord) for coord in bbox]
 
-            # Get color based on class name (using ultralytics color scheme)
-            color = colors(
-                hash(class_name) % 20, True
-            )  # Use hash to get consistent colors
+            # Get color based on class name
+            color = colors(hash(class_name) % 20, True)
 
-            # Create label with class name, confidence and OCR text
-            label = f"{class_name} ({confidence:.2f}): {text}"
+            # Create more compact label
+            label = f"{class_name[:3]}{confidence:.1f}:{text}"  # Shortened format
 
-            # Draw box and label
-            annotator.box_label([x1, y1, x2, y2], label, color=color)
+            # Draw box and label with offset
+            # Place label above the box with small offset
+            annotator.box_label(
+                [x1, y1, x2, y2], label, color=color, txt_color=(255, 255, 255)
+            )
 
         # Convert back to PIL Image
         return Image.fromarray(annotator.result())
 
     def decode(self, encoded_sequences, idx_to_char, blank_char="-"):
-        """Decode the predicted sequences into text"""
         decoded_sequences = []
+
         for seq in encoded_sequences:
             decoded_label = []
+            prev_char = None  # To track the previous character
+
             for token in seq:
-                if token != 0:
+                if token != 0:  # Ignore padding (token = 0)
                     char = idx_to_char[token.item()]
+                    # Append the character if it's not a blank or the same as the previous character
                     if char != blank_char:
-                        decoded_label.append(char)
+                        if char != prev_char or prev_char == blank_char:
+                            decoded_label.append(char)
+                    prev_char = char  # Update previous character
+
             decoded_sequences.append("".join(decoded_label))
+
         return decoded_sequences
 
 
