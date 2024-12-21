@@ -11,6 +11,8 @@ from PIL import Image, ImageDraw, ImageFont
 from ray import serve
 from torchvision import transforms
 from ultralytics import YOLO
+from ultralytics.utils.plotting import Annotator, colors
+import numpy as np
 
 app = FastAPI()
 
@@ -158,35 +160,30 @@ class OCRService:
             raise HTTPException(status_code=500, detail=f"Error processing image: {e}")
 
     def draw_predictions(self, image, predictions):
-        """Draw predictions on the image"""
-        draw_image = image.copy()
-        draw = ImageDraw.Draw(draw_image)
+        """Draw predictions on the image using Ultralytics Annotator"""
+        # Convert PIL Image to numpy array
+        image_array = np.array(image)
 
-        try:
-            font = ImageFont.truetype("arial.ttf", 20)
-        except Exception as e:
-            font = ImageFont.load_default()
-
-        colors = {
-            "text": (255, 0, 0),
-            "number": (0, 255, 0),
-            "default": (255, 165, 0),
-        }
+        # Initialize Annotator
+        annotator = Annotator(image_array, font="Arial.ttf", pil=False)
 
         for bbox, class_name, confidence, text in predictions:
+            # Convert bbox coordinates to integers
             x1, y1, x2, y2 = [int(coord) for coord in bbox]
-            color = colors.get(class_name.lower(), colors["default"])
 
-            # Draw rectangle
-            draw.rectangle([x1, y1, x2, y2], outline=color, width=2)
+            # Get color based on class name (using ultralytics color scheme)
+            color = colors(
+                hash(class_name) % 20, True
+            )  # Use hash to get consistent colors
 
-            # Draw label
+            # Create label with class name, confidence and OCR text
             label = f"{class_name} ({confidence:.2f}): {text}"
-            text_bbox = draw.textbbox((x1, y1 - 25), label, font=font)
-            draw.rectangle(text_bbox, fill=color)
-            draw.text((x1, y1 - 25), label, fill=(255, 255, 255), font=font)
 
-        return draw_image
+            # Draw box and label
+            annotator.box_label([x1, y1, x2, y2], label, color=color)
+
+        # Convert back to PIL Image
+        return Image.fromarray(annotator.result())
 
     def decode(self, encoded_sequences, idx_to_char, blank_char="-"):
         """Decode the predicted sequences into text"""
