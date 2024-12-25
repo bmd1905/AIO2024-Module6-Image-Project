@@ -13,9 +13,6 @@ from ultralytics.utils.plotting import Annotator, colors
 
 app = FastAPI()
 
-# Constants
-MODEL_PATH = "../models/yolov11/detect/train/weights/best.pt"
-
 
 @serve.deployment(num_replicas=1)
 @serve.ingress(app)
@@ -92,12 +89,12 @@ class APIIngress:
 
 
 @serve.deployment(
-    ray_actor_options={"num_gpus": 0.5, "num_cpus": 4},
-    autoscaling_config={"min_replicas": 1, "max_replicas": 2},
+    ray_actor_options={"num_gpus": 0.2, "num_cpus": 2},
+    autoscaling_config={"min_replicas": 1, "max_replicas": 4},
 )
 class ObjectDetection:
     def __init__(self):
-        self.model = YOLO(MODEL_PATH)
+        self.model = YOLO("yolo11n.pt")
 
     def detect(self, image_path: str):
         try:
