@@ -1,4 +1,4 @@
-.PHONY: init deploy client clean
+.PHONY: init deploy client clean streamlit
 
 clean:
 	ray stop || true
@@ -15,3 +15,7 @@ deploy:
 deploy_ocr:
 	@echo "Starting OCR server..."
 	serve run ocr:entrypoint --address="auto"
+
+streamlit:
+	@echo "Starting Streamlit app..."
+	streamlit run app.py

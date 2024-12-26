@@ -3,8 +3,6 @@ opencv-python-headless==4.10.0.84
 pydantic==2.10.1
 ray[serve]==2.40.0
 requests==2.32.3
-torch==2.0.1
-torchvision==0.15.2
 ultralytics==8.3.51
 python-multipart==0.0.20
 gdown
@@ -12,3 +10,4 @@ scikit-learn
 pygments
 pexpect
 timm
+streamlit
