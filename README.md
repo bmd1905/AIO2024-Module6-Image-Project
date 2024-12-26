@@ -15,7 +15,20 @@ pip install -r requirements.txt
 ```bash
 cd deployment
 make init
-make deploy_ocr
+```
+
+## Start deployment
+
+```bash
+cd deployment
+make deploy
+```
+
+## Start the Streamlit App
+
+```bash
+cd deployment
+make streamlit
 ```
 
 You can:
