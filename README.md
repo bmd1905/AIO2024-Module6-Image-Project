@@ -25,7 +25,7 @@ make init
 
 ```bash
 cd deployment
-make deploy
+make deploy_ocr
 ```
 
 ## Start the Streamlit App
@@ -39,3 +39,4 @@ You can:
 
 - Go to `localhost:8265` to see the dashboard of the server
 - Access the Swagger UI at `localhost:8000/docs`
+- The UI is avaiable at `localhost:8501`
