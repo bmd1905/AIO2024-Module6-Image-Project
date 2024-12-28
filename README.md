@@ -1,5 +1,9 @@
 # AIO-2024 Module 6 - Image Project
 
+
+https://github.com/user-attachments/assets/e1415720-2ea6-45af-8c38-a393db90e4d2
+
+
 In this project, we will train a YOLOv11 model to detect
 
 ## Setup Env
